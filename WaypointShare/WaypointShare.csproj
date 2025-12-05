@@ -16,32 +16,67 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Set default Vintage Story path for Windows if not already set -->
-    <VintageStoryPath Condition="'$(VINTAGE_STORY)' == '' AND Exists('C:\Users\$(USERNAME)\AppData\Roaming\VintagestoryData\gamedata')">C:\Users\$(USERNAME)\AppData\Roaming\VintagestoryData\gamedata</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VINTAGE_STORY)' == '' AND Exists('C:\Program Files (x86)\Vintagestory')">C:\Program Files (x86)\Vintagestory</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VINTAGE_STORY)' == '' AND Exists('C:\Program Files\Vintagestory')">C:\Program Files\Vintagestory</VintageStoryPath>
+    <!-- Try to auto-detect Vintage Story installation path -->
     <VintageStoryPath Condition="'$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Users\$(USERNAME)\AppData\Roaming\Vintagestory')">C:\Users\$(USERNAME)\AppData\Roaming\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Vintagestory')">C:\Program Files (x86)\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Vintagestory')">C:\Program Files\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('$(USERPROFILE)\AppData\Roaming\Vintagestory')">$(USERPROFILE)\AppData\Roaming\Vintagestory</VintageStoryPath>
+    
+    <!-- Fallback: common Steam installation paths -->
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\VintageStory')">C:\Program Files (x86)\Steam\steamapps\common\VintageStory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Steam\steamapps\common\VintageStory')">C:\Program Files\Steam\steamapps\common\VintageStory</VintageStoryPath>
+    
+    <!-- Show warning if path not found -->
+    <VintageStoryFound Condition="'$(VintageStoryPath)' != '' AND Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">true</VintageStoryFound>
+    <VintageStoryFound Condition="'$(VintageStoryFound)' != 'true'">false</VintageStoryFound>
   </PropertyGroup>
 
-  <ItemGroup>
+  <Target Name="CheckVintageStoryPath" BeforeTargets="BeforeBuild">
+    <Message Text="VintageStoryPath: $(VintageStoryPath)" Importance="high" />
+    <Warning Text="Vintage Story installation not found. Please set VINTAGE_STORY environment variable or install Vintage Story." Condition="'$(VintageStoryFound)' == 'false'" />
+  </Target>
+
+  <ItemGroup Condition="'$(VintageStoryFound)' == 'true'">
     <Reference Include="VintagestoryAPI">
       <HintPath>$(VintageStoryPath)\VintagestoryAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="VSEssentials">
+    <Reference Include="VSEssentials" Condition="Exists('$(VintageStoryPath)\Mods\VSEssentials.dll')">
       <HintPath>$(VintageStoryPath)\Mods\VSEssentials.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="VSCreativeMod">
+    <Reference Include="VSCreativeMod" Condition="Exists('$(VintageStoryPath)\Mods\VSCreativeMod.dll')">
       <HintPath>$(VintageStoryPath)\Mods\VSCreativeMod.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="ImGui.NET">
+    <Reference Include="ImGui.NET" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')">
       <HintPath>$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="VSImGui">
+    <Reference Include="VSImGui" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll')">
       <HintPath>$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Alternative reference paths for different Vintage Story installations -->
+  <ItemGroup Condition="'$(VintageStoryFound)' != 'true' AND '$(VintageStoryPath)' != ''">
+    <Reference Include="VintagestoryAPI" Condition="Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">
+      <HintPath>$(VintageStoryPath)\VintagestoryAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Try alternate paths for mods -->
+    <Reference Include="VSEssentials" Condition="Exists('$(VintageStoryPath)\VSEssentials.dll')">
+      <HintPath>$(VintageStoryPath)\VSEssentials.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ImGui.NET" Condition="Exists('$(VintageStoryPath)\ImGui.NET.dll')">
+      <HintPath>$(VintageStoryPath)\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VSImGui" Condition="Exists('$(VintageStoryPath)\VSImGui.dll')">
+      <HintPath>$(VintageStoryPath)\VSImGui.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
