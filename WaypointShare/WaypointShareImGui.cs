@@ -12,7 +12,7 @@ namespace WaypointShare
     {
         private ICoreClientAPI capi;
         private WaypointShareMod mod;
-        private List<Vintagestory.API.Datastructures.Waypoint> waypoints;
+        private List<Vintagestory.API.Common.Waypoint> waypoints;
         private List<IPlayer> onlinePlayers;
         private int selectedWaypointIndex = -1;
         private int selectedPlayerIndex = -1;
@@ -28,7 +28,7 @@ namespace WaypointShare
 
         private void LoadWaypoints()
         {
-            waypoints = new List<Vintagestory.API.Datastructures.Waypoint>();
+            waypoints = new List<Vintagestory.API.Common.Waypoint>();
 
             try
             {
