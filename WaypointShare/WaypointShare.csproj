@@ -46,13 +46,19 @@
     <Message Text="ImGui in main install: $(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')" Importance="high" />
     <Message Text="VSImGui in main install: $(VintageStoryPath)\Mods\VSImGui\VSImGui.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll')" Importance="high" />
     
-    <!-- Check mod cache ImGui (server downloads) -->
-    <Message Text="ImGui in mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')" Importance="high" />
-    <Message Text="VSImGui in mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')" Importance="high" />
+    <!-- Check server-downloaded mods (ModsByServer) -->
+    <ItemGroup>
+      <ServerImGuiFiles Include="$(VintageStoryDataPath)\ModsByServer\**\vsimgui.zip" />
+      <ServerImGuiDlls Include="$(VintageStoryDataPath)\ModsByServer\**\ImGui.NET.dll" />
+      <ServerVSImGuiDlls Include="$(VintageStoryDataPath)\ModsByServer\**\VSImGui.dll" />
+    </ItemGroup>
+    <Message Text="Found vsimgui.zip in server folders: @(ServerImGuiFiles)" Condition="'@(ServerImGuiFiles)' != ''" Importance="high" />
+    <Message Text="Found ImGui.NET.dll in server folders: @(ServerImGuiDlls)" Condition="'@(ServerImGuiDlls)' != ''" Importance="high" />
+    <Message Text="Found VSImGui.dll in server folders: @(ServerVSImGuiDlls)" Condition="'@(ServerVSImGuiDlls)' != ''" Importance="high" />
     
-    <!-- Check temp extraction folders -->
-    <Message Text="ImGui in temp: $(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll" Condition="Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')" Importance="high" />
-    <Message Text="VSImGui in temp: $(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll" Condition="Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')" Importance="high" />
+    <!-- Check legacy mod cache paths for compatibility -->
+    <Message Text="ImGui in legacy mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')" Importance="high" />
+    <Message Text="VSImGui in legacy mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')" Importance="high" />
     
     <Message Text="protobuf-net.dll exists: $(VintageStoryPath)\protobuf-net.dll" Condition="Exists('$(VintageStoryPath)\protobuf-net.dll')" Importance="high" />
     
@@ -60,10 +66,10 @@
     
     <!-- Only error if ImGui isn't found in ANY of the locations -->
     <Error Text="VSImGui mod is required but not found in any location. Please install VSImGui from: https://mods.vintagestory.at/vsimgui or join a server that has it installed." 
-           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND !Exists('$(VintageStoryPath)\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')" />
+           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND !Exists('$(VintageStoryPath)\VSImGui.dll') AND '@(ServerVSImGuiDlls)' == '' AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')" />
            
     <Error Text="ImGui.NET.dll is required but not found in any location. Please ensure VSImGui mod is properly installed from: https://mods.vintagestory.at/vsimgui or available from a server." 
-           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND !Exists('$(VintageStoryPath)\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')" />
+           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND !Exists('$(VintageStoryPath)\ImGui.NET.dll') AND '@(ServerImGuiDlls)' == '' AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')" />
   </Target>
 
   <ItemGroup Condition="'$(VintageStoryFound)' == 'true'">
@@ -118,23 +124,30 @@
     </Reference>
   </ItemGroup>
 
-  <!-- Look for ImGui in server-downloaded mod cache (VintagestoryData) -->
+  <!-- Look for ImGui in server-downloaded mod cache (VintagestoryData\ModsByServer) -->
   <ItemGroup Condition="'$(VintageStoryDataPath)' != ''">
-    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')">
+    <!-- Search for ImGui in ModsByServer folders (using wildcards to find any server IP) -->
+    <ImGuiServerFiles Include="$(VintageStoryDataPath)\ModsByServer\**\vsimgui.zip" />
+    <ImGuiServerDlls Include="$(VintageStoryDataPath)\ModsByServer\**\ImGui.NET.dll" />
+    <VSImGuiServerDlls Include="$(VintageStoryDataPath)\ModsByServer\**\VSImGui.dll" />
+    
+    <!-- Try to find extracted DLLs in server folders -->
+    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND '@(ImGuiServerDlls)' != ''">
+      <HintPath>@(ImGuiServerDlls -> '%(Identity)' )</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND '@(VSImGuiServerDlls)' != ''">
+      <HintPath>@(VSImGuiServerDlls -> '%(Identity)' )</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <!-- Fallback: check old paths for compatibility -->
+    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND '@(ImGuiServerDlls)' == '' AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')">
       <HintPath>$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')">
+    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND '@(VSImGuiServerDlls)' == '' AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')">
       <HintPath>$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <!-- Also check in temporary extraction folders -->
-    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll') AND Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')">
-      <HintPath>$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll') AND Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')">
-      <HintPath>$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
