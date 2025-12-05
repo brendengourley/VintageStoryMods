@@ -129,10 +129,11 @@
   </ItemGroup>
 
   <!-- Extract and reference ImGui from server-downloaded zips if needed -->
-  <Target Name="ExtractServerImGui" BeforeTargets="BeforeBuild" Condition="'$(VintageStoryDataPath)' != '' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll')">
+  <Target Name="ExtractServerImGui" BeforeTargets="BeforeBuild" Condition="'$(VintageStoryDataPath)' != ''">
     <!-- Find vsimgui.zip in any server folder -->
     <ItemGroup>
       <VSImGuiZipFiles Include="$(VintageStoryDataPath)\ModsByServer\**\vsimgui.zip" />
+      <VSImGuiZipFiles Include="$(VintageStoryPath)\Mods\vsimgui.zip" Condition="Exists('$(VintageStoryPath)\Mods\vsimgui.zip')" />
     </ItemGroup>
     
     <!-- Extract the first found zip to a temp build location -->
@@ -141,11 +142,26 @@
       <VSImGuiBuildExtractPath>$(MSBuildProjectDirectory)\obj\VSImGuiExtracted</VSImGuiBuildExtractPath>
     </PropertyGroup>
     
-    <!-- Only extract if we found a zip and haven't extracted yet -->
-    <MakeDir Directories="$(VSImGuiBuildExtractPath)" Condition="'$(VSImGuiZipFile)' != '' AND !Exists('$(VSImGuiBuildExtractPath)\VSImGui.dll')" />
-    <Unzip SourceFiles="$(VSImGuiZipFile)" DestinationFolder="$(VSImGuiBuildExtractPath)" Condition="'$(VSImGuiZipFile)' != '' AND !Exists('$(VSImGuiBuildExtractPath)\VSImGui.dll')" />
+    <!-- Force extraction if zip is newer than extracted DLL or if DLL doesn't exist -->
+    <PropertyGroup Condition="'$(VSImGuiZipFile)' != ''">
+      <ZipLastModified>$([System.IO.File]::GetLastWriteTime('$(VSImGuiZipFile)').Ticks)</ZipLastModified>
+      <ExtractedDllExists>$([System.IO.File]::Exists('$(VSImGuiBuildExtractPath)\VSImGui.dll'))</ExtractedDllExists>
+      <ExtractedDllLastModified Condition="$(ExtractedDllExists)">$([System.IO.File]::GetLastWriteTime('$(VSImGuiBuildExtractPath)\VSImGui.dll').Ticks)</ExtractedDllLastModified>
+      <NeedsExtraction Condition="!$(ExtractedDllExists) OR $(ZipLastModified) > $(ExtractedDllLastModified)">true</NeedsExtraction>
+    </PropertyGroup>
     
-    <Message Text="Extracted VSImGui from server zip: $(VSImGuiZipFile)" Condition="'$(VSImGuiZipFile)' != '' AND Exists('$(VSImGuiBuildExtractPath)\VSImGui.dll')" Importance="high" />
+    <!-- Clean and extract if needed -->
+    <RemoveDir Directories="$(VSImGuiBuildExtractPath)" Condition="'$(NeedsExtraction)' == 'true'" />
+    <MakeDir Directories="$(VSImGuiBuildExtractPath)" Condition="'$(NeedsExtraction)' == 'true'" />
+    <Unzip SourceFiles="$(VSImGuiZipFile)" DestinationFolder="$(VSImGuiBuildExtractPath)" Condition="'$(NeedsExtraction)' == 'true'" />
+    
+    <Message Text="Found VSImGui zip: $(VSImGuiZipFile)" Condition="'$(VSImGuiZipFile)' != ''" Importance="high" />
+    <Message Text="Extracting VSImGui to: $(VSImGuiBuildExtractPath)" Condition="'$(NeedsExtraction)' == 'true'" Importance="high" />
+    <Message Text="Using existing extracted VSImGui at: $(VSImGuiBuildExtractPath)" Condition="'$(VSImGuiZipFile)' != '' AND '$(NeedsExtraction)' != 'true'" Importance="high" />
+    
+    <!-- Verify extraction worked -->
+    <Warning Text="VSImGui extraction may have failed - VSImGui.dll not found after extraction" Condition="'$(NeedsExtraction)' == 'true' AND !Exists('$(VSImGuiBuildExtractPath)\VSImGui.dll')" />
+    <Warning Text="ImGui.NET extraction may have failed - ImGui.NET.dll not found after extraction" Condition="'$(NeedsExtraction)' == 'true' AND !Exists('$(VSImGuiBuildExtractPath)\ImGui.NET.dll')" />
   </Target>
 
   <!-- Look for ImGui in extracted server mods or other locations -->
@@ -202,6 +218,28 @@
   <Target Name="CleanExtractedImGui" AfterTargets="AfterBuild">
     <RemoveDir Directories="$(MSBuildProjectDirectory)\obj\VSImGuiExtracted" Condition="Exists('$(MSBuildProjectDirectory)\obj\VSImGuiExtracted')" />
     <Message Text="Cleaned up extracted VSImGui files" Condition="Exists('$(MSBuildProjectDirectory)\obj\VSImGuiExtracted')" Importance="normal" />
+  </Target>
+
+  <!-- Manual target to help diagnose ImGui installation issues -->
+  <Target Name="DiagnoseImGui">
+    <Message Text="=== ImGui Diagnosis ===" Importance="high" />
+    <Message Text="VintageStoryPath: $(VintageStoryPath)" Importance="high" />
+    <Message Text="VintageStoryDataPath: $(VintageStoryDataPath)" Importance="high" />
+    
+    <!-- Check for zip files -->
+    <ItemGroup>
+      <AllVSImGuiZips Include="$(VintageStoryDataPath)\ModsByServer\**\vsimgui.zip" />
+      <AllVSImGuiZips Include="$(VintageStoryPath)\Mods\vsimgui.zip" Condition="Exists('$(VintageStoryPath)\Mods\vsimgui.zip')" />
+    </ItemGroup>
+    <Message Text="Found VSImGui zips: @(AllVSImGuiZips)" Importance="high" />
+    
+    <!-- Check for DLL files -->
+    <Message Text="Local VSImGui.dll: $(VintageStoryPath)\Mods\VSImGui\VSImGui.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll')" Importance="high" />
+    <Message Text="Local ImGui.NET.dll: $(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')" Importance="high" />
+    <Message Text="Extracted VSImGui.dll: $(MSBuildProjectDirectory)\obj\VSImGuiExtracted\VSImGui.dll" Condition="Exists('$(MSBuildProjectDirectory)\obj\VSImGuiExtracted\VSImGui.dll')" Importance="high" />
+    <Message Text="Extracted ImGui.NET.dll: $(MSBuildProjectDirectory)\obj\VSImGuiExtracted\ImGui.NET.dll" Condition="Exists('$(MSBuildProjectDirectory)\obj\VSImGuiExtracted\ImGui.NET.dll')" Importance="high" />
+    
+    <Warning Text="No VSImGui installations found! Please install VSImGui or join a server that has it." Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND '@(AllVSImGuiZips)' == '' AND !Exists('$(MSBuildProjectDirectory)\obj\VSImGuiExtracted\VSImGui.dll')" />
   </Target>
 
   <Target Name="Package" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release' ">

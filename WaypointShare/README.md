@@ -105,11 +105,14 @@ If you encounter build errors:
 
 1. **ImGui/VSImGui references not found**:
 
+   - **Diagnose your setup**: Run `dotnet msbuild -t:DiagnoseImGui` to see what ImGui files are found
    - **Local installation**: Check for `VSImGui.dll` and `ImGui.NET.dll` in `[VintageStory]\Mods\VSImGui\` folder
    - **Server-downloaded**: The build will automatically extract `vsimgui.zip` from `VintagestoryData\ModsByServer\[server-ip]\`
-   - **Extraction process**: If found, the zip is temporarily extracted to `obj\VSImGuiExtracted\` during build
-   - **Alternative**: Join a server with VSImGui to auto-download it, then build (extraction is automatic)
-   - The build will show diagnostic messages about which paths it's checking, what it finds, and extraction status
+   - **Manual extraction**: If you have `vsimgui.zip`, the build will extract it to `obj\VSImGuiExtracted\` automatically
+   - **Alternative methods**:
+     - Install VSImGui locally: Download and install from the mod site
+     - Join a server with VSImGui: It will download to your mod cache automatically
+   - The build will show diagnostic messages about extraction and what files it finds
    - Common VS paths: `C:\Users\[USERNAME]\AppData\Roaming\Vintagestory`, `C:\Program Files (x86)\Vintagestory`
 
 2. **.NET Framework version errors**:
