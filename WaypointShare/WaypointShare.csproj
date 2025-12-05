@@ -20,11 +20,28 @@
   <!-- Vintage Story path detection -->
   <PropertyGroup>
     <VintageStoryPath Condition="'$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Vintagestory')">C:\Program Files (x86)\Vintagestory</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Vintagestory')">C:\Program Files\Vintagestory</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\VintageStory')">C:\Program Files (x86)\Steam\steamapps\common\VintageStory</VintageStoryPath>
-    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Steam\steamapps\common\VintageStory')">C:\Program Files\Steam\steamapps\common\VintageStory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Vintagestory\VintagestoryAPI.dll')">C:\Program Files (x86)\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Vintagestory\VintagestoryAPI.dll')">C:\Program Files\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\VintageStory\VintagestoryAPI.dll')">C:\Program Files (x86)\Steam\steamapps\common\VintageStory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Steam\steamapps\common\VintageStory\VintagestoryAPI.dll')">C:\Program Files\Steam\steamapps\common\VintageStory</VintageStoryPath>
+    
+    <!-- Additional common paths -->
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('$(USERPROFILE)\AppData\Roaming\Vintagestory\VintagestoryAPI.dll')">$(USERPROFILE)\AppData\Roaming\Vintagestory</VintageStoryPath>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Users\$(USERNAME)\AppData\Roaming\Vintagestory\VintagestoryAPI.dll')">C:\Users\$(USERNAME)\AppData\Roaming\Vintagestory</VintageStoryPath>
+    
+    <!-- Debug output -->
+    <VintageStoryFound Condition="'$(VintageStoryPath)' != '' AND Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">true</VintageStoryFound>
+    <VintageStoryFound Condition="'$(VintageStoryFound)' != 'true'">false</VintageStoryFound>
   </PropertyGroup>
+  
+  <!-- Diagnostic target to help find Vintage Story -->
+  <Target Name="DiagnoseVintageStory" BeforeTargets="BeforeBuild">
+    <Message Text="Looking for Vintage Story..." Importance="high" />
+    <Message Text="VINTAGE_STORY environment variable: $(VINTAGE_STORY)" Importance="high" />
+    <Message Text="VintageStoryPath resolved to: $(VintageStoryPath)" Importance="high" />
+    <Message Text="VintagestoryAPI.dll found: $(VintageStoryFound)" Importance="high" />
+    <Warning Text="Vintage Story installation not found. Please set VINTAGE_STORY environment variable or install Vintage Story in a standard location." Condition="'$(VintageStoryFound)' == 'false'" />
+  </Target>
 
   <!-- Following ImGui Wiki: Add imgui/ and imgui/backends/ folders to include paths -->
   <PropertyGroup>
@@ -51,16 +68,27 @@
   <!-- NuGet packages -->
   <ItemGroup>
     <PackageReference Include="protobuf-net" Version="3.2.30" />
-    <PackageReference Include="ImGui.NET" Version="1.91.5.1" />
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
   </ItemGroup>
 
   <!-- Vintage Story API reference -->
-  <ItemGroup Condition="'$(VintageStoryPath)' != '' AND Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">
+  <ItemGroup Condition="'$(VintageStoryFound)' == 'true'">
     <Reference Include="VintagestoryAPI">
       <HintPath>$(VintageStoryPath)\VintagestoryAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    
+    <!-- Also try to find protobuf-net from VS installation -->
+    <Reference Include="protobuf-net" Condition="Exists('$(VintageStoryPath)\protobuf-net.dll')">
+      <HintPath>$(VintageStoryPath)\protobuf-net.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
+  
+  <!-- Error if Vintage Story not found -->
+  <Target Name="CheckVintageStory" BeforeTargets="BeforeBuild">
+    <Error Text="Vintage Story installation not found. Please set the VINTAGE_STORY environment variable to your Vintage Story installation directory, or install Vintage Story in a standard location (Program Files, Steam, etc.)" Condition="'$(VintageStoryFound)' == 'false'" />
+  </Target>
 
   <!-- Copy mod files to output -->
   <ItemGroup>
