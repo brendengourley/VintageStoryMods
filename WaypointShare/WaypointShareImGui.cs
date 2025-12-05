@@ -4,7 +4,7 @@ using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
-using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 using ImGuiNET;
 
 namespace WaypointShare
@@ -13,7 +13,7 @@ namespace WaypointShare
     {
         private ICoreClientAPI capi;
         private WaypointShareMod mod;
-        private List<Vec3d> waypoints;
+        private List<Waypoint> waypoints;
         private List<IPlayer> onlinePlayers;
         private int selectedWaypointIndex = -1;
         private int selectedPlayerIndex = -1;
@@ -29,15 +29,20 @@ namespace WaypointShare
 
         private void LoadWaypoints()
         {
-            waypoints = new List<Vec3d>();
+            waypoints = new List<Waypoint>();
 
             try
             {
-                // For now, add some example waypoints
-                // TODO: Load actual waypoints from game data
-                waypoints.Add(new Vec3d(100, 64, 100));
-                waypoints.Add(new Vec3d(200, 80, 150));
-                waypoints.Add(new Vec3d(-50, 70, 300));
+                var mapManager = capi.ModLoader.GetModSystem<WorldMapManager>();
+                if (mapManager != null)
+                {
+                    var mapLayers = mapManager.MapLayers;
+                    var waypointLayer = mapLayers.Find(x => x is WaypointMapLayer) as WaypointMapLayer;
+                    if (waypointLayer != null)
+                    {
+                        waypoints = waypointLayer.ownWaypoints.ToList();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -95,7 +100,7 @@ namespace WaypointShare
                         for (int i = 0; i < waypoints.Count; i++)
                         {
                             var waypoint = waypoints[i];
-                            string waypointText = $"Waypoint {i + 1} ({(int)waypoint.X}, {(int)waypoint.Y}, {(int)waypoint.Z})";
+                            string waypointText = $"{waypoint.Title} ({(int)waypoint.Position.X}, {(int)waypoint.Position.Y}, {(int)waypoint.Position.Z})";
                             
                             if (ImGui.Selectable(waypointText, selectedWaypointIndex == i))
                             {
@@ -157,8 +162,8 @@ namespace WaypointShare
                 {
                     var waypoint = waypoints[selectedWaypointIndex];
                     ImGui.Separator();
-                    ImGui.Text($"Selected waypoint: Waypoint {selectedWaypointIndex + 1}");
-                    ImGui.Text($"Location: {(int)waypoint.X}, {(int)waypoint.Y}, {(int)waypoint.Z}");
+                    ImGui.Text($"Selected waypoint: {waypoint.Title}");
+                    ImGui.Text($"Location: {(int)waypoint.Position.X}, {(int)waypoint.Position.Y}, {(int)waypoint.Position.Z}");
                 }
 
                 if (selectedPlayerIndex >= 0 && selectedPlayerIndex < onlinePlayers.Count)
@@ -195,18 +200,18 @@ namespace WaypointShare
                 SenderPlayerUid = capi.World.Player.PlayerUID,
                 SenderPlayerName = capi.World.Player.PlayerName,
                 RecipientPlayerUid = recipient.PlayerUID,
-                WaypointTitle = $"Waypoint {selectedWaypointIndex + 1}",
-                X = waypoint.X,
-                Y = waypoint.Y,
-                Z = waypoint.Z,
-                Color = 0xFF0000, // Red color as default
-                Icon = "circle" // Default icon
+                WaypointTitle = waypoint.Title,
+                X = waypoint.Position.X,
+                Y = waypoint.Position.Y,
+                Z = waypoint.Position.Z,
+                Color = waypoint.Color,
+                Icon = waypoint.Icon
             };
 
             // Send packet to server
             capi.Network.GetChannel(WaypointShareMod.NetworkChannelId).SendPacket(packet);
 
-            capi.ShowChatMessage($"Waypoint at ({(int)waypoint.X}, {(int)waypoint.Y}, {(int)waypoint.Z}) sent to {recipient.PlayerName}");
+            capi.ShowChatMessage($"Waypoint '{waypoint.Title}' sent to {recipient.PlayerName}");
 
             isOpen = false;
         }
