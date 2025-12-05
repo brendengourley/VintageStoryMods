@@ -1,12 +1,21 @@
 # Waypoint Share Mod for Vintage Story
 
-A multiplayer mod for Vintage Story that allows players to share waypoints with each other on a server.
+A multiplayer mod for Vintage Story that allows players to share waypoints with each other on a server using an ImGui interface.
+
+## ⚠️ Dependencies
+
+**This mod requires the VSImGui mod to function:**
+
+- **VSImGui**: Download from [https://mods.vintagestory.at/vsimgui](https://mods.vintagestory.at/vsimgui)
+- Minimum version: 1.1.16
+- **Can be installed locally OR downloaded from a server that has it**
+- **Must be available on both client and server**
 
 ## Features
 
 - Share any of your waypoints with other online players
 - Select specific players from a list to send waypoints to
-- Simple GUI interface for selecting waypoints and recipients
+- ImGui-based interface for selecting waypoints and recipients
 - Waypoints retain their original title, icon, and color
 - Recipients see who shared the waypoint with them
 
@@ -14,9 +23,10 @@ A multiplayer mod for Vintage Story that allows players to share waypoints with 
 
 ### Prerequisites
 
-- **ImGui Mod**: This mod requires the ImGui library mod to be installed first
-  - Download ImGui from: https://mods.vintagestory.at/imgui
-  - Install ImGui version 1.1.16 or later
+- **VSImGui Mod**: This mod requires the VSImGui library mod to be available
+  - **Option 1**: Download and install VSImGui locally from: https://mods.vintagestory.at/vsimgui
+  - **Option 2**: Join a server that has VSImGui installed (it will be automatically downloaded)
+  - Minimum version: 1.1.16
 
 ### Steps
 
@@ -44,9 +54,10 @@ The recipient will receive a chat notification and the waypoint will be added to
 
 ### Prerequisites
 
-- .NET 7.0 SDK or later
+- .NET 8.0 SDK or later
 - Vintage Story installed
-- Set the `VINTAGE_STORY` environment variable to your Vintage Story installation directory
+- **VSImGui mod installed** in your Vintage Story installation
+- Set the `VINTAGE_STORY` environment variable to your Vintage Story installation directory (optional - auto-detection available)
 
 ### Build Steps
 
@@ -87,6 +98,26 @@ zip -r WaypointShare.zip WaypointShare.dll modinfo.json
 ## Configuration
 
 No configuration required - the mod works out of the box!
+
+### Build Troubleshooting
+
+If you encounter build errors:
+
+1. **ImGui/VSImGui references not found**:
+
+   - **Local installation**: Check for `VSImGui.dll` and `ImGui.NET.dll` in `[VintageStory]\Mods\VSImGui\` folder
+   - **Server-downloaded**: Check for DLLs in `C:\Users\[USERNAME]\AppData\Roaming\VintagestoryData\ModCache\vsimgui\`
+   - **Alternative**: Join a server with VSImGui to auto-download it, then build
+   - The build will show diagnostic messages about which paths it's checking
+   - Common paths: `C:\Users\[USERNAME]\AppData\Roaming\Vintagestory`, `C:\Program Files (x86)\Vintagestory`
+
+2. **.NET Framework version errors**:
+
+   - Ensure you have .NET 8.0 SDK installed (matches Vintage Story's runtime)
+
+3. **Vintage Story path not found**:
+   - Set environment variable: `VINTAGE_STORY=C:\path\to\your\vintagestory\installation`
+   - Or let auto-detection find common installation paths
 
 ## Troubleshooting
 

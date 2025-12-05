@@ -28,6 +28,10 @@
     <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\VintageStory')">C:\Program Files (x86)\Steam\steamapps\common\VintageStory</VintageStoryPath>
     <VintageStoryPath Condition="'$(VintageStoryPath)' == '' AND Exists('C:\Program Files\Steam\steamapps\common\VintageStory')">C:\Program Files\Steam\steamapps\common\VintageStory</VintageStoryPath>
     
+    <!-- Additional paths for server-downloaded mods (in mod cache) -->
+    <VintageStoryDataPath Condition="'$(VintageStoryDataPath)' == ''">C:\Users\$(USERNAME)\AppData\Roaming\VintagestoryData</VintageStoryDataPath>
+    <VintageStoryDataPath Condition="'$(VintageStoryDataPath)' == '' AND Exists('$(USERPROFILE)\AppData\Roaming\VintagestoryData')">$(USERPROFILE)\AppData\Roaming\VintagestoryData</VintageStoryDataPath>
+    
     <!-- Show warning if path not found -->
     <VintageStoryFound Condition="'$(VintageStoryPath)' != '' AND Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">true</VintageStoryFound>
     <VintageStoryFound Condition="'$(VintageStoryFound)' != 'true'">false</VintageStoryFound>
@@ -35,7 +39,31 @@
 
   <Target Name="CheckVintageStoryPath" BeforeTargets="BeforeBuild">
     <Message Text="VintageStoryPath: $(VintageStoryPath)" Importance="high" />
+    <Message Text="VintageStoryDataPath: $(VintageStoryDataPath)" Importance="high" />
+    <Message Text="VintagestoryAPI.dll exists: $(VintageStoryPath)\VintagestoryAPI.dll" Condition="Exists('$(VintageStoryPath)\VintagestoryAPI.dll')" Importance="high" />
+    
+    <!-- Check main installation ImGui -->
+    <Message Text="ImGui in main install: $(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')" Importance="high" />
+    <Message Text="VSImGui in main install: $(VintageStoryPath)\Mods\VSImGui\VSImGui.dll" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll')" Importance="high" />
+    
+    <!-- Check mod cache ImGui (server downloads) -->
+    <Message Text="ImGui in mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')" Importance="high" />
+    <Message Text="VSImGui in mod cache: $(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll" Condition="Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')" Importance="high" />
+    
+    <!-- Check temp extraction folders -->
+    <Message Text="ImGui in temp: $(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll" Condition="Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')" Importance="high" />
+    <Message Text="VSImGui in temp: $(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll" Condition="Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')" Importance="high" />
+    
+    <Message Text="protobuf-net.dll exists: $(VintageStoryPath)\protobuf-net.dll" Condition="Exists('$(VintageStoryPath)\protobuf-net.dll')" Importance="high" />
+    
     <Warning Text="Vintage Story installation not found. Please set VINTAGE_STORY environment variable or install Vintage Story." Condition="'$(VintageStoryFound)' == 'false'" />
+    
+    <!-- Only error if ImGui isn't found in ANY of the locations -->
+    <Error Text="VSImGui mod is required but not found in any location. Please install VSImGui from: https://mods.vintagestory.at/vsimgui or join a server that has it installed." 
+           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND !Exists('$(VintageStoryPath)\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')" />
+           
+    <Error Text="ImGui.NET.dll is required but not found in any location. Please ensure VSImGui mod is properly installed from: https://mods.vintagestory.at/vsimgui or available from a server." 
+           Condition="'$(VintageStoryFound)' == 'true' AND !Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND !Exists('$(VintageStoryPath)\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')" />
   </Target>
 
   <ItemGroup Condition="'$(VintageStoryFound)' == 'true'">
@@ -90,6 +118,27 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Look for ImGui in server-downloaded mod cache (VintagestoryData) -->
+  <ItemGroup Condition="'$(VintageStoryDataPath)' != ''">
+    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll')">
+      <HintPath>$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll')">
+      <HintPath>$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Also check in temporary extraction folders -->
+    <Reference Include="ImGui.NET" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\ImGui.NET.dll') AND Exists('$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll')">
+      <HintPath>$(VintageStoryDataPath)\Temp\vsimgui\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VSImGui" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\VSImGui.dll') AND !Exists('$(VintageStoryDataPath)\ModCache\vsimgui\VSImGui.dll') AND Exists('$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll')">
+      <HintPath>$(VintageStoryDataPath)\Temp\vsimgui\VSImGui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="modinfo.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -98,8 +147,11 @@
 
   <!-- Add NuGet packages as fallback if local references don't work -->
   <ItemGroup>
-    <PackageReference Include="protobuf-net" Version="3.2.30" Condition="!Exists('$(VintageStoryPath)\\protobuf-net.dll')" />
+    <PackageReference Include="protobuf-net" Version="3.2.30" Condition="!Exists('$(VintageStoryPath)\protobuf-net.dll')" />
+    <PackageReference Include="ImGui.NET" Version="1.89.7.1" Condition="!Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')" />
   </ItemGroup>
+
+  <!-- ImGui is required for this mod to function -->
 
   <Target Name="Package" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release' ">
     <ZipDirectory SourceDirectory="$(TargetDir)" DestinationFile="$(TargetDir)../WaypointShare.zip" Overwrite="true" />
