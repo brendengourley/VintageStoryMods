@@ -3,7 +3,6 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 using Vintagestory.API.Client;
 using Vintagestory.API.Datastructures;
-using VSImGui;
 
 namespace WaypointShare
 {
@@ -41,12 +40,9 @@ namespace WaypointShare
                 .RegisterMessageType<WaypointSharePacket>()
                 .SetMessageHandler<WaypointSharePacket>(OnClientReceiveWaypoint);
             
-            // Register ImGui window and hotkey
-            var imguiSystem = clientApi.ModLoader.GetModSystem<VSImGuiModSystem>();
-            if (imguiSystem != null)
-            {
-                imguiSystem.SetUpImGuiWindows += DrawWaypointShareWindow;
-            }
+            // TODO: Set up ImGui rendering integration
+            // Following ImGui wiki approach with direct ImGui.NET usage
+            // This will need proper integration with Vintage Story's rendering pipeline
             
             clientApi.Input.RegisterHotKey("waypointshare", "Open Waypoint Share Dialog", GlKeys.P, HotkeyType.GUIOrOtherControls, shiftPressed: true);
             clientApi.Input.SetHotKeyHandler("waypointshare", ToggleWaypointShareWindow);
