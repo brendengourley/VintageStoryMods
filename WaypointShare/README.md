@@ -56,13 +56,30 @@ The recipient will receive a chat notification and the waypoint will be added to
 
 - .NET 8.0 SDK or later
 - Vintage Story installed
-- **VSImGui mod installed** in your Vintage Story installation
-- Set the `VINTAGE_STORY` environment variable to your Vintage Story installation directory (optional - auto-detection available)
+- **VSImGui mod** (can be installed or just have the DLL files)
 
-### Build Steps
+### Build Methods
+
+#### Method 1: Manual DLL Extraction (Recommended)
 
 1. Clone this repository
-2. Set the environment variable:
+2. Get the VSImGui mod files:
+   - Download `vsimgui.zip` from [VSImGui releases](https://github.com/blakdragan7/vsimgui/releases)
+   - Or find it in your server mods: `%APPDATA%\VintagestoryData\ModsByServer\<server-ip>\vsimgui.zip`
+3. Extract the DLL files:
+   - Unzip `vsimgui.zip`
+   - Copy `ImGui.NET.dll` and `VSImGui.dll` to the `WaypointShare` project folder
+   - (Optional: Create a `lib` subfolder and place DLLs there instead)
+4. Build the project:
+   ```bash
+   dotnet build -c Release
+   ```
+
+#### Method 2: Automatic Detection
+
+1. Clone this repository
+2. Install VSImGui mod in your Vintage Story installation
+3. (Optional) Set environment variable for custom VS location:
 
    ```bash
    # Windows (PowerShell)
@@ -72,12 +89,15 @@ The recipient will receive a chat notification and the waypoint will be added to
    export VINTAGE_STORY="/path/to/vintagestory"
    ```
 
-3. Build the project:
+4. Build the project:
    ```bash
    dotnet build -c Release
    ```
-4. The compiled mod will be in `bin/Release/net7.0/`
-5. For release builds, a `WaypointShare.zip` file will be automatically created
+
+### Output
+
+- The compiled mod will be in `bin/Release/net8.0/`
+- For release builds, a `WaypointShare.zip` file will be automatically created
 
 ### Manual Packaging
 
@@ -87,6 +107,29 @@ If you need to manually package the mod:
 cd bin/Release/net7.0/
 zip -r WaypointShare.zip WaypointShare.dll modinfo.json
 ```
+
+### Troubleshooting Build Issues
+
+If you encounter build errors:
+
+1. **Check DLL locations:**
+
+   ```bash
+   dotnet msbuild -t:DiagnoseImGui
+   ```
+
+   This will show which DLL files were found and their locations.
+
+2. **Manual DLL placement:**
+
+   - Make sure `ImGui.NET.dll` and `VSImGui.dll` are in your project root
+   - Or place them in a `lib` subfolder
+   - The build will prioritize local files over auto-detection
+
+3. **Common locations for vsimgui.zip:**
+   - Downloads folder
+   - `%APPDATA%\VintagestoryData\ModsByServer\<server-ip>\vsimgui.zip`
+   - Vintage Story `Mods` folder if previously extracted
 
 ## Compatibility
 
