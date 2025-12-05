@@ -2,6 +2,7 @@ using System;
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 using Vintagestory.API.Client;
+using Vintagestory.API.Datastructures;
 using VSImGui;
 
 namespace WaypointShare
@@ -103,7 +104,7 @@ namespace WaypointShare
             if (waypointManager != null)
             {
                 // Add the waypoint to the client's waypoint list
-                var waypoint = new Vintagestory.API.Datastructures.Waypoint
+                var waypoint = new Waypoint
                 {
                     Position = new Vintagestory.API.MathTools.Vec3d(packet.X, packet.Y, packet.Z),
                     Title = packet.WaypointTitle,

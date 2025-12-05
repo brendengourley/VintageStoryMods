@@ -2,7 +2,7 @@ using ProtoBuf;
 
 namespace WaypointShare
 {
-    [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     public class WaypointSharePacket
     {
         public string SenderPlayerUid { get; set; }

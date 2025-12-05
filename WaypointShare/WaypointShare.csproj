@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -50,6 +51,10 @@
       <HintPath>$(VintageStoryPath)\Mods\VSCreativeMod.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="protobuf-net" Condition="Exists('$(VintageStoryPath)\protobuf-net.dll')">
+      <HintPath>$(VintageStoryPath)\protobuf-net.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="ImGui.NET" Condition="Exists('$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll')">
       <HintPath>$(VintageStoryPath)\Mods\VSImGui\ImGui.NET.dll</HintPath>
       <Private>false</Private>
@@ -64,6 +69,10 @@
   <ItemGroup Condition="'$(VintageStoryFound)' != 'true' AND '$(VintageStoryPath)' != ''">
     <Reference Include="VintagestoryAPI" Condition="Exists('$(VintageStoryPath)\VintagestoryAPI.dll')">
       <HintPath>$(VintageStoryPath)\VintagestoryAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="protobuf-net" Condition="Exists('$(VintageStoryPath)\protobuf-net.dll')">
+      <HintPath>$(VintageStoryPath)\protobuf-net.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <!-- Try alternate paths for mods -->
@@ -85,6 +94,11 @@
     <None Include="modinfo.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <!-- Add NuGet packages as fallback if local references don't work -->
+  <ItemGroup>
+    <PackageReference Include="protobuf-net" Version="3.2.30" Condition="!Exists('$(VintageStoryPath)\\protobuf-net.dll')" />
   </ItemGroup>
 
   <Target Name="Package" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release' ">
