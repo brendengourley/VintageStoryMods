@@ -1,0 +1,17 @@
+{
+  "type": "code",
+  "modid": "waypointshare",
+  "name": "Waypoint Share",
+  "author": "YourName",
+  "description": "Share waypoints with other players on the server",
+  "version": "1.0.0",
+  "networkenvironment": "universal",
+  "textureSize": 32,
+  "side": "universal",
+  "requiredOnClient": true,
+  "requiredOnServer": true,
+  "dependencies": {
+    "game": "1.21.0",
+    "vsimgui": "1.1.16"
+  }
+}
