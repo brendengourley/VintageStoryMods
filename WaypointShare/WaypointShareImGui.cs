@@ -69,7 +69,7 @@ namespace WaypointShare
             // Set up chat message listener to capture waypoint list output
             bool isListening = false;
             
-            ChatLineDelegate chatHandler = (message, chattype, data) =>
+            ChatLineDelegate chatHandler = (message, chattype) =>
             {
                 if (isListening && chattype == EnumChatType.CommandSuccess)
                 {
