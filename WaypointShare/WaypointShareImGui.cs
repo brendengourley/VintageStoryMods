@@ -41,34 +41,114 @@ namespace WaypointShare
 
             try
             {
-                // Since waypoints are not accessible through public API, create sample waypoints
-                // In a full implementation, you could:
-                // 1. Store waypoints in mod data
-                // 2. Use commands to list waypoints
-                // 3. Let users create waypoints in this UI
+                // Use the /waypoint list command to get player's actual waypoints
+                // We'll capture the chat output to parse waypoint information
+                ParseWaypointsFromCommand();
                 
-                var playerPos = capi.World.Player.Entity.Pos.XYZ;
-                waypoints.Add(new SimpleWaypoint 
-                { 
-                    Position = playerPos, 
-                    Title = "Current Position",
-                    Color = 0xFF0000,
-                    Icon = "circle"
-                });
-                
-                // Add some example waypoints near spawn
-                var spawnPos = capi.World.DefaultSpawnPosition.XYZ;
-                waypoints.Add(new SimpleWaypoint
+                // If no waypoints were loaded, add current position as fallback
+                if (waypoints.Count == 0)
                 {
-                    Position = spawnPos,
-                    Title = "World Spawn",
-                    Color = 0x00FF00,
-                    Icon = "home"
-                });
+                    var playerPos = capi.World.Player.Entity.Pos.XYZ;
+                    waypoints.Add(new SimpleWaypoint 
+                    { 
+                        Position = playerPos, 
+                        Title = "Current Position",
+                        Color = 0xFF0000,
+                        Icon = "circle"
+                    });
+                }
             }
             catch (Exception ex)
             {
                 capi.Logger.Error($"Error loading waypoints: {ex.Message}");
+            }
+        }
+        
+        private void ParseWaypointsFromCommand()
+        {
+            // Set up chat message listener to capture waypoint list output
+            bool isListening = false;
+            
+            var originalHandler = capi.Event.ChatMessage;
+            
+            capi.Event.ChatMessage += (int groupId, string message, EnumChatType chattype, string data) =>
+            {
+                if (isListening && chattype == EnumChatType.CommandSuccess)
+                {
+                    // Parse waypoint line format: "0: Title at [x, y, z]"
+                    ParseWaypointLine(message);
+                }
+            };
+            
+            isListening = true;
+            
+            // Send the waypoint list command
+            capi.SendChatMessage("/waypoint list details");
+            
+            // Stop listening after a short delay
+            capi.Event.RegisterGameTickListener((dt) => {
+                isListening = false;
+                return false; // Remove this listener
+            }, 1000); // Wait 1 second for response
+        }
+        
+        private void ParseWaypointLine(string line)
+        {
+            try
+            {
+                // Expected format: "0: Waypoint Name at [100, 64, 200] #FF0000 circle"
+                var parts = line.Split(':');
+                if (parts.Length < 2) return;
+                
+                var info = parts[1].Trim();
+                var atIndex = info.IndexOf(" at ");
+                if (atIndex == -1) return;
+                
+                var title = info.Substring(0, atIndex).Trim();
+                var remaining = info.Substring(atIndex + 4).Trim();
+                
+                // Parse coordinates [x, y, z]
+                var coordStart = remaining.IndexOf('[');
+                var coordEnd = remaining.IndexOf(']');
+                if (coordStart == -1 || coordEnd == -1) return;
+                
+                var coordStr = remaining.Substring(coordStart + 1, coordEnd - coordStart - 1);
+                var coords = coordStr.Split(',').Select(s => s.Trim()).ToArray();
+                
+                if (coords.Length != 3) return;
+                
+                if (double.TryParse(coords[0], out double x) && 
+                    double.TryParse(coords[1], out double y) && 
+                    double.TryParse(coords[2], out double z))
+                {
+                    // Parse color and icon if available
+                    var afterCoords = remaining.Substring(coordEnd + 1).Trim();
+                    var parts2 = afterCoords.Split(' ');
+                    
+                    int color = 0xFF0000; // Default red
+                    string icon = "circle";
+                    
+                    if (parts2.Length >= 1 && parts2[0].StartsWith("#"))
+                    {
+                        try { color = Convert.ToInt32(parts2[0].Substring(1), 16); } catch { }
+                    }
+                    if (parts2.Length >= 2)
+                    {
+                        icon = parts2[1];
+                    }
+                    
+                    waypoints.Add(new SimpleWaypoint
+                    {
+                        Position = new Vec3d(x, y, z),
+                        Title = title,
+                        Color = color,
+                        Icon = icon
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                capi.Logger.Warning($"Failed to parse waypoint line: {line} - {ex.Message}");
             }
         }
 
