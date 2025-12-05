@@ -41,22 +41,8 @@ namespace WaypointShare
 
             try
             {
-                // Use the /waypoint list command to get player's actual waypoints
-                // We'll capture the chat output to parse waypoint information
+                // Load actual waypoints from player data
                 ParseWaypointsFromCommand();
-                
-                // If no waypoints were loaded, add current position as fallback
-                if (waypoints.Count == 0)
-                {
-                    var playerPos = capi.World.Player.Entity.Pos.XYZ;
-                    waypoints.Add(new SimpleWaypoint 
-                    { 
-                        Position = playerPos, 
-                        Title = "Current Position",
-                        Color = 0xFF0000,
-                        Icon = "circle"
-                    });
-                }
             }
             catch (Exception ex)
             {
@@ -66,33 +52,71 @@ namespace WaypointShare
         
         private void ParseWaypointsFromCommand()
         {
-            // Set up chat message listener to capture waypoint list output
-            bool isListening = false;
-            
-            ClientChatLineDelegate chatHandler = (string message, EnumChatType chattype, string data) =>
+            // Try to load waypoints from the player's waypoint data
+            try
             {
-                if (isListening && chattype == EnumChatType.CommandSuccess)
-                {
-                    // Parse waypoint line format: "0: Title at [x, y, z]"
-                    ParseWaypointLine(message);
-                }
-            };
-            
-            capi.Event.ClientChatMessage += chatHandler;
-            
-            isListening = true;
-            
-            // Send the waypoint list command
-            capi.SendChatMessage("/waypoint list details");
-            
-            // Stop listening after a short delay
-            long listenerId = 0;
-            listenerId = capi.Event.RegisterGameTickListener((dt) => {
-                isListening = false;
-                capi.Event.ClientChatMessage -= chatHandler; // Remove chat handler
-                capi.Event.UnregisterGameTickListener(listenerId); // Remove this listener
-            }, 1000); // Wait 1 second for response
+                LoadWaypointsFromPlayerData();
+            }
+            catch (Exception ex)
+            {
+                capi.Logger.Warning($"Could not load player waypoints: {ex.Message}");
+            }
         }
+        
+        private void LoadWaypointsFromPlayerData()
+        {
+            // Access player waypoints through the world save data
+            var playerData = capi.World.Player.Entity.WatchedAttributes;
+            
+            // Try to get waypoints from player attributes
+            if (playerData.HasAttribute("waypoints"))
+            {
+                var waypointsAttribute = playerData.GetAttribute("waypoints") as TreeAttribute;
+                if (waypointsAttribute != null)
+                {
+                    foreach (var kvp in waypointsAttribute)
+                    {
+                        if (kvp.Value is TreeAttribute waypointAttr)
+                        {
+                            try
+                            {
+                                var waypoint = new SimpleWaypoint
+                                {
+                                    Title = waypointAttr.GetString("title", "Untitled"),
+                                    Position = new Vec3d(
+                                        waypointAttr.GetDouble("x", 0),
+                                        waypointAttr.GetDouble("y", 0),
+                                        waypointAttr.GetDouble("z", 0)
+                                    ),
+                                    Color = waypointAttr.GetInt("color", 0xFF0000),
+                                    Icon = waypointAttr.GetString("icon", "circle")
+                                };
+                                waypoints.Add(waypoint);
+                            }
+                            catch (Exception ex)
+                            {
+                                capi.Logger.Warning($"Error parsing waypoint: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If no waypoints found in attributes, try alternative approach
+            if (waypoints.Count == 0)
+            {
+                LoadWaypointsFromCommand();
+            }
+        }
+        
+        private void LoadWaypointsFromCommand()
+        {
+            // Since we can't directly parse chat output, we'll attempt the command
+            // but won't add fallback waypoints if it fails
+            capi.SendChatMessage("/waypoint list");
+        }
+        
+
         
         private void ParseWaypointLine(string line)
         {
@@ -298,26 +322,21 @@ namespace WaypointShare
             var waypoint = waypoints[selectedWaypointIndex];
             var recipient = onlinePlayers[selectedPlayerIndex];
 
-            // Create packet
-            var packet = new WaypointSharePacket
+            try
             {
-                SenderPlayerUid = capi.World.Player.PlayerUID,
-                SenderPlayerName = capi.World.Player.PlayerName,
-                RecipientPlayerUid = recipient.PlayerUID,
-                WaypointTitle = waypoint.Title,
-                X = waypoint.Position.X,
-                Y = waypoint.Position.Y,
-                Z = waypoint.Position.Z,
-                Color = waypoint.Color,
-                Icon = waypoint.Icon
-            };
-
-            // Send packet to server
-            capi.Network.GetChannel(WaypointShareMod.NetworkChannelId).SendPacket(packet);
-
-            capi.ShowChatMessage($"Waypoint '{waypoint.Title}' sent to {recipient.PlayerName}");
-
-            isOpen = false;
-        }
+                // Create packet with the actual waypoint data
+                var packet = new WaypointSharePacket
+                {
+                    SenderPlayerUid = capi.World.Player.PlayerUID,
+                    SenderPlayerName = capi.World.Player.PlayerName,
+                    RecipientPlayerUid = recipient.PlayerUID,
+                    WaypointTitle = waypoint.Title,
+                    X = waypoint.Position.X,
+                    Y = waypoint.Position.Y,
+                    Z = waypoint.Position.Z,
+                    Color = waypoint.Color,
+                    Icon = waypoint.Icon
+                };\n\n                // Send packet to server
+                capi.Network.GetChannel(WaypointShareMod.NetworkChannelId).SendPacket(packet);\n\n                capi.ShowChatMessage($\"Waypoint '{waypoint.Title}' sent to {recipient.PlayerName}\");\n                capi.Logger.Notification($\"Shared waypoint '{waypoint.Title}' at ({waypoint.Position.X:F1}, {waypoint.Position.Y:F1}, {waypoint.Position.Z:F1}) with {recipient.PlayerName}\");\n\n                isOpen = false;\n            }\n            catch (Exception ex)\n            {\n                capi.Logger.Error($\"Error sending waypoint: {ex.Message}\");\n                capi.ShowChatMessage($\"Failed to send waypoint to {recipient.PlayerName}\");\n            }\n        }
     }
 }

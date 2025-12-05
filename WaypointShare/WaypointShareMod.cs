@@ -95,11 +95,58 @@ namespace WaypointShare
         private void OnClientReceiveWaypoint(WaypointSharePacket packet)
         {
             // Client receives waypoint from server
-            // Since we can't directly access the waypoint system, use the waypoint command instead
-            var command = $"/waypoint addati {packet.Icon} ~{packet.X - clientApi.World.Player.Entity.Pos.X} ~{packet.Y - clientApi.World.Player.Entity.Pos.Y} ~{packet.Z - clientApi.World.Player.Entity.Pos.Z} false #{packet.Color:X6} {packet.WaypointTitle} (from {packet.SenderPlayerName})";
+            try
+            {
+                // First try to save the waypoint to player data
+                SaveWaypointToPlayerData(packet);
+                
+                // Also add it using the waypoint command for immediate visibility
+                var command = $"/waypoint add {packet.Icon} {packet.X} {packet.Y} {packet.Z} false #{packet.Color:X6} {packet.WaypointTitle} (from {packet.SenderPlayerName})";
+                clientApi.SendChatMessage(command);
+                
+                clientApi.ShowChatMessage($"Received waypoint '{packet.WaypointTitle}' from {packet.SenderPlayerName}");
+            }
+            catch (Exception ex)
+            {
+                clientApi.Logger.Error($"Error receiving waypoint: {ex.Message}");
+                clientApi.ShowChatMessage($"Failed to receive waypoint from {packet.SenderPlayerName}");
+            }
+        }
+        
+        private void SaveWaypointToPlayerData(WaypointSharePacket packet)
+        {
+            // Try to save the waypoint to the player's data
+            var playerData = clientApi.World.Player.Entity.WatchedAttributes;
             
-            clientApi.SendChatMessage(command);
-            clientApi.ShowChatMessage($"Received waypoint '{packet.WaypointTitle}' from {packet.SenderPlayerName}");
+            // Get or create waypoints attribute
+            TreeAttribute waypointsAttr;
+            if (!playerData.HasAttribute("waypoints"))
+            {
+                waypointsAttr = new TreeAttribute();
+                playerData.SetAttribute("waypoints", waypointsAttr);
+            }
+            else
+            {
+                waypointsAttr = playerData.GetAttribute("waypoints") as TreeAttribute;
+            }
+            
+            // Create a unique key for this waypoint
+            var waypointKey = $"shared_{DateTime.Now.Ticks}";
+            
+            // Create waypoint data
+            var waypointData = new TreeAttribute();
+            waypointData.SetString("title", packet.WaypointTitle);
+            waypointData.SetDouble("x", packet.X);
+            waypointData.SetDouble("y", packet.Y);
+            waypointData.SetDouble("z", packet.Z);
+            waypointData.SetInt("color", packet.Color);
+            waypointData.SetString("icon", packet.Icon);
+            waypointData.SetString("sender", packet.SenderPlayerName);
+            
+            waypointsAttr.SetAttribute(waypointKey, waypointData);
+            
+            // Mark the entity as dirty to ensure data is saved
+            clientApi.World.Player.Entity.WatchedAttributes.MarkPathDirty("waypoints");
         }
     }
 }
