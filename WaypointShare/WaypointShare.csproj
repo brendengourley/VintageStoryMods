@@ -75,7 +75,7 @@
       <ZipFiles Include="$(OutputPath)\*.dll" />
       <ZipFiles Include="$(OutputPath)\modinfo.json" />
     </ItemGroup>
-    <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(OutputPath)\*.dll', '$(OutputPath)\modinfo.json' -DestinationPath '$(OutputPath)\WaypointShare.zip' -Force&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(OutputPath)*.dll', '$(OutputPath)modinfo.json' -DestinationPath '$(OutputPath)WaypointShare.zip' -Force&quot;" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="cd '$(OutputPath)' && zip -r WaypointShare.zip *.dll modinfo.json" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 
