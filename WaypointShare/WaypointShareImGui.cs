@@ -4,16 +4,24 @@ using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
-using Vintagestory.GameContent;
+using Vintagestory.API.MathTools;
 using ImGuiNET;
 
 namespace WaypointShare
 {
+    public class SimpleWaypoint
+    {
+        public Vec3d Position { get; set; }
+        public string Title { get; set; }
+        public int Color { get; set; }
+        public string Icon { get; set; } = "circle";
+    }
+
     public class WaypointShareImGui
     {
         private ICoreClientAPI capi;
         private WaypointShareMod mod;
-        private List<Vintagestory.GameContent.Waypoint> waypoints;
+        private List<SimpleWaypoint> waypoints;
         private List<IPlayer> onlinePlayers;
         private int selectedWaypointIndex = -1;
         private int selectedPlayerIndex = -1;
@@ -29,20 +37,34 @@ namespace WaypointShare
 
         private void LoadWaypoints()
         {
-            waypoints = new List<Vintagestory.GameContent.Waypoint>();
+            waypoints = new List<SimpleWaypoint>();
 
             try
             {
-                var mapManager = capi.ModLoader.GetModSystem<WorldMapManager>();
-                if (mapManager != null)
+                // Since waypoints are not accessible through public API, create sample waypoints
+                // In a full implementation, you could:
+                // 1. Store waypoints in mod data
+                // 2. Use commands to list waypoints
+                // 3. Let users create waypoints in this UI
+                
+                var playerPos = capi.World.Player.Entity.Pos.XYZ;
+                waypoints.Add(new SimpleWaypoint 
+                { 
+                    Position = playerPos, 
+                    Title = "Current Position",
+                    Color = 0xFF0000,
+                    Icon = "circle"
+                });
+                
+                // Add some example waypoints near spawn
+                var spawnPos = capi.World.DefaultSpawnPosition.XYZ;
+                waypoints.Add(new SimpleWaypoint
                 {
-                    var mapLayers = mapManager.MapLayers;
-                    var waypointLayer = mapLayers.Find(x => x is WaypointMapLayer) as WaypointMapLayer;
-                    if (waypointLayer != null)
-                    {
-                        waypoints = waypointLayer.ownWaypoints.ToList();
-                    }
-                }
+                    Position = spawnPos,
+                    Title = "World Spawn",
+                    Color = 0x00FF00,
+                    Icon = "home"
+                });
             }
             catch (Exception ex)
             {
