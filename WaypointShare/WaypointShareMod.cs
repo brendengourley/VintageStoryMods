@@ -95,25 +95,11 @@ namespace WaypointShare
         private void OnClientReceiveWaypoint(WaypointSharePacket packet)
         {
             // Client receives waypoint from server
-            var waypointManager = clientApi.ModLoader.GetModSystem<Vintagestory.GameContent.WorldMapManager>();
+            // Since we can't directly access the waypoint system, use the waypoint command instead
+            var command = $"/waypoint addati {packet.Icon} ~{packet.X - clientApi.World.Player.Entity.Pos.X} ~{packet.Y - clientApi.World.Player.Entity.Pos.Y} ~{packet.Z - clientApi.World.Player.Entity.Pos.Z} false #{packet.Color:X6} {packet.WaypointTitle} (from {packet.SenderPlayerName})";
             
-            if (waypointManager != null)
-            {
-                // Add the waypoint to the client's waypoint list
-                var waypoint = new Waypoint
-                {
-                    Position = new Vintagestory.API.MathTools.Vec3d(packet.X, packet.Y, packet.Z),
-                    Title = packet.WaypointTitle,
-                    Text = $"Shared by {packet.SenderPlayerName}",
-                    Color = packet.Color,
-                    Icon = packet.Icon,
-                    Pinned = false
-                };
-
-                waypointManager.WaypointMapLayer()?.AddWaypoint(waypoint);
-                
-                clientApi.ShowChatMessage($"Received waypoint '{packet.WaypointTitle}' from {packet.SenderPlayerName}");
-            }
+            clientApi.SendChatMessage(command);
+            clientApi.ShowChatMessage($"Received waypoint '{packet.WaypointTitle}' from {packet.SenderPlayerName}");
         }
     }
 }
