@@ -116,8 +116,6 @@ namespace WaypointShare
             capi.SendChatMessage("/waypoint list");
         }
         
-
-        
         private void ParseWaypointLine(string line)
         {
             try
