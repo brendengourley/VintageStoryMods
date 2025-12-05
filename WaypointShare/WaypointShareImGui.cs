@@ -69,7 +69,7 @@ namespace WaypointShare
             // Set up chat message listener to capture waypoint list output
             bool isListening = false;
             
-            ChatLineDelegate chatHandler = (message, chattype) =>
+            ClientChatLineDelegate chatHandler = (string message, EnumChatType chattype, string data) =>
             {
                 if (isListening && chattype == EnumChatType.CommandSuccess)
                 {
@@ -78,7 +78,7 @@ namespace WaypointShare
                 }
             };
             
-            capi.Event.ChatMessage += chatHandler;
+            capi.Event.ClientChatMessage += chatHandler;
             
             isListening = true;
             
@@ -89,7 +89,7 @@ namespace WaypointShare
             long listenerId = 0;
             listenerId = capi.Event.RegisterGameTickListener((dt) => {
                 isListening = false;
-                capi.Event.ChatMessage -= chatHandler; // Remove chat handler
+                capi.Event.ClientChatMessage -= chatHandler; // Remove chat handler
                 capi.Event.UnregisterGameTickListener(listenerId); // Remove this listener
             }, 1000); // Wait 1 second for response
         }
