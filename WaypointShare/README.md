@@ -75,6 +75,8 @@ The recipient will receive a chat notification and the waypoint will be added to
    dotnet build -c Release
    ```
 
+**Note**: This project follows the correct .NET approach for ImGui integration. The [ImGui.NET](https://www.nuget.org/packages/ImGui.NET/) NuGet package handles the native ImGui compilation and .NET bindings automatically. The native ImGui C++ source compilation described in the ImGui wiki applies to native C++ applications, not .NET projects.
+
 #### Method 2: Automatic Detection
 
 1. Clone this repository

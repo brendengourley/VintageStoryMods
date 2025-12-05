@@ -1,0 +1,3 @@
+[submodule "WaypointShare/imgui"]
+	path = WaypointShare/imgui
+	url = git@github.com:ocornut/imgui.git
