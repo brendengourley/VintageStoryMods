@@ -334,7 +334,15 @@ namespace WaypointShare
                     Z = waypoint.Position.Z,
                     Color = waypoint.Color,
                     Icon = waypoint.Icon
-                };\n\n                // Send packet to server
-                capi.Network.GetChannel(WaypointShareMod.NetworkChannelId).SendPacket(packet);\n\n                capi.ShowChatMessage($\"Waypoint '{waypoint.Title}' sent to {recipient.PlayerName}\");\n                capi.Logger.Notification($\"Shared waypoint '{waypoint.Title}' at ({waypoint.Position.X:F1}, {waypoint.Position.Y:F1}, {waypoint.Position.Z:F1}) with {recipient.PlayerName}\");\n\n                isOpen = false;\n            }\n            catch (Exception ex)\n            {\n                capi.Logger.Error($\"Error sending waypoint: {ex.Message}\");\n                capi.ShowChatMessage($\"Failed to send waypoint to {recipient.PlayerName}\");\n            }\n        }
+                };
+
+                // Send packet to server
+                capi.Network.GetChannel(WaypointShareMod.NetworkChannelId).SendPacket(packet);
+
+                capi.ShowChatMessage($"Waypoint '{waypoint.Title}' sent to {recipient.PlayerName}");
+                capi.Logger.Notification($"Shared waypoint '{waypoint.Title}' at ({waypoint.Position.X:F1}, {waypoint.Position.Y:F1}, {waypoint.Position.Z:F1}) with {recipient.PlayerName}");
+
+                isOpen = false;
+            }\n            catch (Exception ex)\n            {\n                capi.Logger.Error($\"Error sending waypoint: {ex.Message}\");\n                capi.ShowChatMessage($\"Failed to send waypoint to {recipient.PlayerName}\");\n            }\n        }
     }
 }
