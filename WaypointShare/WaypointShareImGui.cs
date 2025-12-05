@@ -215,4 +215,3 @@ namespace WaypointShare
         }
     }
 }
-#endif
